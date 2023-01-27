@@ -1,0 +1,4 @@
+FROM postgres:14.0-alpine
+
+ENV POSTGRES_PASSWORD T0rque$ys
+ENV POSTGRES_DB wiki

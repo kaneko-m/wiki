@@ -1,0 +1,43 @@
+- hosts: target
+  become: true
+
+  tasks:
+    - name: Stop container
+      command:
+        cmd: 'docker container stop nginx123'
+
+    - name: Remove container
+      command:
+        cmd: 'docker container rm nginx123'
+    
+    - name: Remove container image
+      docker_image:
+        name: nginx123
+        state: absent
+
+    - name: Remove container image
+      docker_image:
+        name: nginx
+        state: absent
+
+    - name: Stop container
+      command:
+        cmd: 'docker container stop wiki2'
+
+    - name: Remove container
+      command:
+        cmd: 'docker container rm wiki2'
+    
+    - name: Remove container image
+      docker_image:
+        name: wiki2
+        state: absent
+
+    - name: Remove container image
+      docker_image:
+        name: requarks/wiki
+        state: absent
+
+    - name: Remove web volume
+      command:
+        cmd: 'rm -rf /root/web-dockerfile/'

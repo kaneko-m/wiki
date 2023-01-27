@@ -1,0 +1,160 @@
+- hosts: target
+  become: true
+
+  tasks:
+    - name: Install aptitude
+      apt:
+        name: aptitude
+        state: latest
+        update_cache: true
+
+    - name: Install required system packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - virtualenv
+          - python3-setuptools
+        state: latest
+        update_cache: true
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+
+    - name: Update apt and install docker-compose
+      apt:
+        name: docker-compose
+        state: latest
+        update_cache: true
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    - name: Create build directory
+      file:
+        path: /root/web-dockerfile
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Create build nginx directory
+      file:
+        path: /root/web-dockerfile/nginx
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Copy nginx Dockerfile
+      copy:
+        src: ./nginx/Dockerfile
+        dest: /root/web-dockerfile/nginx/Dockerfile
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Create nginx conf.d directory
+      file:
+        path: /root/web-dockerfile/nginx/conf.d
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+  
+    - name: Create nginx system directory
+      file:
+        path: /root/web-dockerfile/nginx/system
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Create nginx share directory
+      file:
+        path: /root/web-dockerfile/nginx/share
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Copy nginx conf.d directory
+      copy:
+        src: ./nginx/conf.d/
+        dest: /root/web-dockerfile/nginx/conf.d/
+
+    - name: Copy nginx system directory
+      copy:
+        src: ./nginx/system/
+        dest: /root/web-dockerfile/nginx/system/
+
+    - name: Build nginx container image
+      docker_image:
+        name: nginx123
+        build:
+          path: /root/web-dockerfile/nginx/
+        source: build
+        state: present
+
+    - name: Run a image nginx container
+      command:
+        cmd: 'docker run --restart=always -d --network fixed_container_network --ip=172.18.0.4 -p 80:80 --name nginx123 nginx123'
+
+    - name: Create build wiki directory
+      file:
+        path: /root/web-dockerfile/wiki
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Copy wiki Dockerfile
+      copy:
+        src: ./wiki/Dockerfile
+        dest: /root/web-dockerfile/wiki/Dockerfile
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Build wiki container image
+      docker_image:
+        name: wiki2
+        build:
+          path: /root/web-dockerfile/wiki/
+        source: build
+        state: present
+
+    - name: Run a image wiki container
+      command:
+        cmd: 'docker run --restart=always -d --network fixed_container_network --ip=172.18.0.5 -p 3000:3000 --name wiki2 wiki2'
+
+    - name: ufw setting
+      ufw:
+        state: enabled
+
+    - name: Allow all access to port 80
+      ufw:
+        rule: allow
+        port: '80'
+        
+    - name: Allow all access to port 22
+      ufw:
+        rule: allow
+        port: '22'

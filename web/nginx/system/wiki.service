@@ -1,0 +1,17 @@
+[Unit]
+Description=Wiki.js API running on Ubuntu
+
+[Service]
+WorkingDirectory=/usr/share/nginx/html/AKKWeb/
+ExecStart=/usr/bin/dotnet /usr/share/nginx/html/AKKWeb/AKKWeb.dll
+Restart=always
+# Restart service after 10 seconds if the dotnet service crashes:
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier=dotnet-AKKWeb
+User=www-data
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+
+[Install]
+WantedBy=multi-user.target

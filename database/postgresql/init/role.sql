@@ -1,0 +1,2 @@
+CREATE ROLE wikijs CREATEDB LOGIN;
+ALTER ROLE wikijs PASSWORD 'wikijsrocks';

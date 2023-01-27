@@ -1,0 +1,135 @@
+- hosts: target
+  become: true
+
+  tasks:
+    - name: Install aptitude
+      apt:
+        name: aptitude
+        state: latest
+        update_cache: true
+
+    - name: Install required system packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - virtualenv
+          - python3-setuptools
+        state: latest
+        update_cache: true
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+
+    - name: Update apt and install docker-compose
+      apt:
+        name: docker-compose
+        state: latest
+        update_cache: true
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    - name: Create build directory
+      file:
+        path: /root/db-dockerfile
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Copy Dockerfile
+      copy:
+        src: ./postgresql/Dockerfile
+        dest: /root/db-dockerfile/Dockerfile
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Create init directory
+      file:
+        path: /root/db-dockerfile/init
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Copy init shell script
+      copy:
+        src: ./postgresql/init/init.sh
+        dest: /root/db-dockerfile/init/init.sh
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Copy role query
+      copy:
+        src: ./postgresql/init/role.sql
+        dest: /root/db-dockerfile/init/role.sql
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Copy role query
+      copy:
+        src: ./postgresql/init/db.sql
+        dest: /root/db-dockerfile/init/db.sql
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Copy pgpass
+      copy:
+        src: ./postgresql/.pgpass
+        dest: /root/.pgpass
+        owner: root
+        group: root
+        mode: '0600'
+        follow: yes
+
+    - name: Build container image
+      docker_image:
+        name: psql14
+        build:
+          path: /root/db-dockerfile/
+        source: build
+        state: present
+
+    - name: Run a image container
+      command:
+        cmd: 'docker run --restart=always --network fixed_container_network --ip=172.18.0.2 -d -v /root/db-dockerfile/init:/share/init -v /root/db-dockerfile/dbdata:/var/lib/postgresql/data -v /share:/share -p 5432:5432 --name psql14 -e POSTGRES_PASSWORD=T0rque$ys postgres'
+
+    - name: ufw setting
+      ufw:
+        state: enabled
+
+    - name: Allow all access to port 5432
+      ufw:
+        rule: allow
+        port: '5432'
+        
+    - name: Allow all access to port 22
+      ufw:
+        rule: allow
+        port: '22'
+
+    - name: Run a init query
+      command:
+        cmd: 'docker exec -it psql14 /bin/bash -c "sh /share/init/init.sh > /share/init/init.log 2>&1;exit"'

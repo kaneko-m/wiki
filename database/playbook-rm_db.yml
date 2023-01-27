@@ -1,0 +1,21 @@
+- hosts: target
+  become: true
+
+  tasks:
+    - name: Stop container psql14
+      command:
+        cmd: 'docker container stop psql14'
+
+    - name: Remove container psql14
+      command:
+        cmd: 'docker container rm psql14'
+    
+    - name: Remove container image psql14
+      docker_image:
+        name: psql14
+        state: absent
+
+    - name: Remove container image postgres
+      docker_image:
+        name: postgres
+        state: absent

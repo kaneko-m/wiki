@@ -1,0 +1,8 @@
+- hosts: target
+  become: true
+
+  tasks:
+    - name: Remove psql volume
+      command:
+        cmd: 'rm -rf /root/db-dockerfile/'
+    
